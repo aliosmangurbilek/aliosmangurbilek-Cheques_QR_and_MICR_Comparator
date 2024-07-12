@@ -11,11 +11,9 @@ import re
 import pandas as pd
 from csv import DictWriter
 
-# Tesseract'ın yolunu belirtin
 pytesseract.pytesseract.tesseract_cmd = r'/usr/bin/tesseract'
 
 
-# Yardımcı fonksiyonları tanımlayın
 def extract_digits_and_symbols(image, charCnts, minW=5, minH=15):
     charIter = charCnts.__iter__()
     rois = []
@@ -51,12 +49,11 @@ def extract_digits_and_symbols(image, charCnts, minW=5, minH=15):
     return (rois, locs)
 
 
-# Karakter isimlerini tanımlayın
 charNames = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0",
              "T", "U", "A", "D"]
 
-# Referans MICR görüntüsünü yükleyin
-ref_image_path = 'cheques/micr_e13b_reference.png'  # Bu yolu güncelleyin
+ref_image_path = 'cheques/micr_e13b_reference.png'  # MICR kodlarının referans olduğu görsel
+
 if not os.path.exists(ref_image_path):
     print(f"Error: The file {ref_image_path} does not exist.")
     exit()
@@ -66,25 +63,24 @@ if ref is None:
     print(f"Error: Unable to read the image at {ref_image_path}.")
     exit()
 
-# Görüntü işlemenin her adımını kontrol edelim
 plt.imshow(cv2.cvtColor(ref, cv2.COLOR_BGR2RGB))
 plt.title('Reference Image')
-plt.show()
+# plt.show()
 
 ref = cv2.cvtColor(ref, cv2.COLOR_BGR2GRAY)
 plt.imshow(ref, cmap='gray')
 plt.title('Grayscale Reference Image')
-plt.show()
+# plt.show()
 
 ref = imutils.resize(ref, width=400)
 plt.imshow(ref, cmap='gray')
 plt.title('Resized Reference Image')
-plt.show()
+# plt.show()
 
 ref = cv2.threshold(ref, 0, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)[1]
 plt.imshow(ref, cmap='gray')
 plt.title('Thresholded Reference Image')
-plt.show()
+# plt.show()
 
 refCnts = cv2.findContours(ref.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 refCnts = refCnts[0] if imutils.is_cv2() else refCnts[1]
@@ -92,6 +88,13 @@ refCnts = refCnts[0] if imutils.is_cv2() else refCnts[1]
 if len(refCnts) == 0:
     print("Error: No contours found in the reference image.")
     exit()
+
+# Kontur kontrolü
+for i, c in enumerate(refCnts):
+    if not isinstance(c, np.ndarray):
+        raise TypeError(f"Kontur {i} numpy array değil, tipi: {type(c)}")
+    elif len(c) == 0:
+        raise ValueError(f"Kontur {i} boş")
 
 refCnts = contours.sort_contours(refCnts, method="left-to-right")[0]
 (refROIs, refLocs) = extract_digits_and_symbols(ref, refCnts, minW=10, minH=20)
@@ -104,7 +107,7 @@ for (name, roi, loc) in zip(charNames, refROIs, refLocs):
 rectKernel = cv2.getStructuringElement(cv2.MORPH_RECT, (17, 7))
 output = []
 
-fileNames = ['cheques/referance_cheques.png']  # MICR kodlarının olduğu çek görselleri burada listelenir
+fileNames = ['cheques/vakıfbank_cek.jpg']  # Çekin fotoğrafının yolu
 
 inputFile = fileNames[0]
 if not os.path.exists(inputFile):
@@ -176,6 +179,14 @@ for (gX, gY, gW, gH) in groupLocs:
 
     charCnts = cv2.findContours(group.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     charCnts = imutils.grab_contours(charCnts)
+
+    # Kontur kontrolü
+    for i, c in enumerate(charCnts):
+        if not isinstance(c, np.ndarray):
+            raise TypeError(f"Kontur {i} numpy array değil, tipi: {type(c)}")
+        elif len(c) == 0:
+            raise ValueError(f"Kontur {i} boş")
+
     charCnts = contours.sort_contours(charCnts, method="left-to-right")[0]
     (rois, locs) = extract_digits_and_symbols(group, charCnts)
 
