@@ -1,5 +1,0 @@
-path: /home/ali/PycharmProjects/aliosmangurbilek-Cheques_QR_and_MICR_Comparator/cheques_dataset
-train: images/train
-val: images/val
-nc: 1
-names: ['micr_code']
